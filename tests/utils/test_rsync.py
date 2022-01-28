@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from transferscript.utils.file_monitor import Monitor
+<<<<<<< HEAD
 from transferscript.utils.rsync import RsyncPipe
+=======
+from transferscript.utils.rsync import RsyncInstance, RsyncPipe
+>>>>>>> Test RsyncPipe and fix joining on threads in RsyncInstance
 
 
 def test_a_simple_rsync_instance(tmp_path):
