@@ -94,7 +94,6 @@ class RsyncPipe(Processor):
         :type stdout: bytes
         """
         stringy_stdout = str(stdout)
-        print(f"output: {stringy_stdout}")
         if stringy_stdout:
             if self._transferring:
                 if stringy_stdout.startswith("sent"):
