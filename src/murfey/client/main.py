@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import os
+import pathlib
+from typing import List, Optional
 
 import requests
 from rich.panel import Panel
@@ -17,6 +19,9 @@ from textual.widgets import (
     Footer,
     ScrollView,
 )
+
+from transferscript.utils.file_monitor import Monitor
+from transferscript.utils.rsync import RsyncPipe
 
 
 class HoverButton(Button):
@@ -144,7 +149,7 @@ def get_visit_info(visit_name: str):
 
 def watch_directory(directory: pathlib.Path) -> Monitor:
     monitor = Monitor(directory)
-    monitor.monitor(in_thread=True)
+    monitor.process(in_thread=True)
     return monitor
 
 
@@ -154,6 +159,7 @@ def stop_watching(monitor: Monitor):
 
 
 def start_transfer(monitor: Monitor, destination: pathlib.Path) -> RsyncPipe:
-    rp = RsyncPipe(monitor, destination)
+    rp = RsyncPipe(destination)
+    monitor >> rp
     rp.process(in_thread=True)
     return rp
