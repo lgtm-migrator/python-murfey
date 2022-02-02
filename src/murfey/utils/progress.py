@@ -9,7 +9,7 @@ from murfey.utils.rsync import RsyncPipe
 class ProgressMonitor(Processor):
     def __init__(self, name: str = "progress_monitor"):
         super().__init__(name=name)
-        self._progress = Progress()
+        self.progress = Progress()
 
     def _process(self, **kwargs):
         if isinstance(self._previous, RsyncPipe) and self._previous.thread:
@@ -22,9 +22,9 @@ class ProgressMonitor(Processor):
                         if not f.is_dir()
                     ]
                 )
-                self._progress.update(total=current_total, advance=1)
+                self.progress.update(total=current_total, advance=1)
                 self._out.put(next_file)
 
     def wait(self):
         super().wait()
-        self._progress.stop()
+        self.progress.stop()
