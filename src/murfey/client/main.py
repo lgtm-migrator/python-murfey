@@ -20,8 +20,8 @@ from textual.widgets import (
     ScrollView,
 )
 
-from transferscript.utils.file_monitor import Monitor
-from transferscript.utils.rsync import RsyncPipe
+from murfey.utils.file_monitor import Monitor
+from murfey.utils.rsync import RsyncPipe
 
 
 class HoverButton(Button):
