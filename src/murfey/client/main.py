@@ -50,6 +50,7 @@ class VisitSelector(App):
 
     watch_directory: Optional[pathlib.Path] = None
     status_history: List[str] = ["Starting:"]
+    _monitoring: bool = False
 
     async def on_load(self, event):
         await self.bind("q", "quit")
@@ -74,12 +75,18 @@ class VisitSelector(App):
         )
 
     async def handle_tree_click(self, message: FileClick):
-        if self.watch_directory is None:
+        if not self._monitoring:
+            adjust = bool(self.watch_directory)
             self.watch_directory = pathlib.Path(message.node.data.path)
             if self.watch_directory.is_dir():
-                self.status_history.append(
-                    f"directory selected {self.watch_directory}: start monitor? [y/n]"
-                )
+                if adjust:
+                    self.status_history[
+                        -1
+                    ] = f"directory selected {self.watch_directory}: start monitor? [y/n]"
+                else:
+                    self.status_history.append(
+                        f"directory selected {self.watch_directory}: start monitor? [y/n]"
+                    )
                 await self._display()
                 await self.bind("y", "choose(True)")
                 await self.bind("n", "choose(False)")
@@ -107,6 +114,7 @@ class VisitSelector(App):
 
     async def _rsync_display(self):
         if self.watch_directory:
+            self._monitoring = True
             self.status_history.append(
                 f"{len([f for f in self.watch_directory.glob('**/*') if f.is_file()])} files seen in {self.watch_directory}"
             )
