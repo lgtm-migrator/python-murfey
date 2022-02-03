@@ -34,7 +34,7 @@ class RsyncPipe(Processor):
             while self._previous.thread.is_alive():
                 files_for_transfer = self._in.get()
                 if not files_for_transfer:
-                    continue
+                    break
                 self._run_rsync(self._previous.dir, files_for_transfer, retry=retry)
 
     def _run_rsync(

@@ -3,12 +3,15 @@ from __future__ import annotations
 import argparse
 import os
 import pathlib
+import time
+from typing import Tuple
 
 import requests
+from rich.prompt import Prompt
 
 from murfey.utils.drain import Drain
 from murfey.utils.file_monitor import Monitor
-from murfey.utils.process import ProgressMonitor
+from murfey.utils.progress import ProgressMonitor
 from murfey.utils.rsync import RsyncPipe
 
 
@@ -17,8 +20,19 @@ def run():
     parser.add_argument("--visit", help="Name of visit", required=True)
     args = parser.parse_args()
     print("Visit name: ", args.visit)
-    print(get_all_visits().text)
-    print(get_visit_info(args.visit).text)
+    visit = Prompt.ask(
+        "Which visit is this?", choices=[v["Visit name"] for v in get_all_visits()]
+    )
+    print(f"chose visit {visit}")
+    dir_to_watch = Prompt.ask("Which directory should be watched?")
+    destination = Prompt.ask("Where should files be transferred to?")
+    monitor = watch_directory(pathlib.Path(dir_to_watch))
+    rsync = start_transfer(monitor, pathlib.Path(destination))
+    progress, drain = start_progress(rsync)
+    time.sleep(30)
+    stop_watching(monitor)
+    rsync.wait()
+    progress.wait()
 
 
 def get_all_visits():
@@ -29,7 +43,7 @@ def get_all_visits():
         raise RuntimeError("No BEAMLINE environment variable was specified")
     # uvicorn default host and port, specified in uvicorn.run in server/main.py
     r = requests.get(path)
-    return r
+    return r.json()
 
 
 def get_visit_info(visit_name: str):
@@ -40,7 +54,7 @@ def get_visit_info(visit_name: str):
         raise RuntimeError("No BEAMLINE environment variable was specified")
     # uvicorn default host and port, specified in uvicorn.run in server/main.py
     r = requests.get(path)
-    return r
+    return r.json()
 
 
 def watch_directory(directory: pathlib.Path) -> Monitor:
@@ -61,11 +75,11 @@ def start_transfer(monitor: Monitor, destination: pathlib.Path) -> RsyncPipe:
     return rp
 
 
-def start_progress(rp: RsyncPipe) -> ProgressMonitor:
+def start_progress(rp: RsyncPipe) -> Tuple[ProgressMonitor, Drain]:
     pm = ProgressMonitor()
     rp >> pm
     pm.process(in_thread=True)
     drain = Drain()
     pm >> drain
-    drain.process(in_thread=True)
-    return pm
+    drain.process(in_thread=True, daemon=True)
+    return pm, drain

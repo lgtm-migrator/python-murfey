@@ -22,12 +22,19 @@ class Processor:
             other._in = self._out
             other._previous = self
 
-    def process(self, in_thread: bool = False, thread_name: str = "", **kwargs):
+    def process(
+        self,
+        in_thread: bool = False,
+        thread_name: str = "",
+        daemon: bool = False,
+        **kwargs
+    ):
         if in_thread:
             self.thread = Thread(
                 target=self._process,
                 kwargs=kwargs,
                 name=thread_name or self.name,
+                daemon=daemon,
             )
             self.thread.start()
         else:
