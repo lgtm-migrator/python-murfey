@@ -2,8 +2,14 @@ from __future__ import annotations
 
 import argparse
 import os
+import pathlib
 
 import requests
+
+from murfey.utils.drain import Drain
+from murfey.utils.file_monitor import Monitor
+from murfey.utils.process import ProgressMonitor
+from murfey.utils.rsync import RsyncPipe
 
 
 def run():
@@ -35,3 +41,31 @@ def get_visit_info(visit_name: str):
     # uvicorn default host and port, specified in uvicorn.run in server/main.py
     r = requests.get(path)
     return r
+
+
+def watch_directory(directory: pathlib.Path) -> Monitor:
+    monitor = Monitor(directory)
+    monitor.process(in_thread=True)
+    return monitor
+
+
+def stop_watching(monitor: Monitor):
+    monitor.stop()
+    monitor.wait()
+
+
+def start_transfer(monitor: Monitor, destination: pathlib.Path) -> RsyncPipe:
+    rp = RsyncPipe(destination)
+    monitor >> rp
+    rp.process(in_thread=True)
+    return rp
+
+
+def start_progress(rp: RsyncPipe) -> ProgressMonitor:
+    pm = ProgressMonitor()
+    rp >> pm
+    pm.process(in_thread=True)
+    drain = Drain()
+    pm >> drain
+    drain.process(in_thread=True)
+    return pm
