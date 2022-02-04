@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import os
 import pathlib
-import time
 from typing import Tuple
 
 import requests
@@ -25,13 +24,15 @@ def run():
     )
     print(f"chose visit {visit}")
     dir_to_watch = Prompt.ask("Which directory should be watched?")
+    pattern = Prompt.ask("Pattern for files to match", default="*.tiff")
     destination = Prompt.ask("Where should files be transferred to?")
-    monitor = watch_directory(pathlib.Path(dir_to_watch))
+    monitor = watch_directory(pathlib.Path(dir_to_watch), file_pattern=pattern)
     rsync = start_transfer(monitor, pathlib.Path(destination))
     progress, drain = start_progress(rsync)
-    time.sleep(30)
-    stop_watching(monitor)
-    rsync.wait()
+    # while stop := Confirm.ask("Continue transfer?"):
+    #    pass
+    # stop_watching(monitor)
+    # rsync.wait()
     progress.wait()
 
 
@@ -57,8 +58,8 @@ def get_visit_info(visit_name: str):
     return r.json()
 
 
-def watch_directory(directory: pathlib.Path) -> Monitor:
-    monitor = Monitor(directory)
+def watch_directory(directory: pathlib.Path, file_pattern: str = "*") -> Monitor:
+    monitor = Monitor(directory, file_pattern=file_pattern)
     monitor.process(in_thread=True)
     return monitor
 

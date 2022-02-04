@@ -27,7 +27,7 @@ class Processor:
         in_thread: bool = False,
         thread_name: str = "",
         daemon: bool = False,
-        **kwargs
+        **kwargs,
     ):
         if in_thread:
             self.thread = Thread(
@@ -46,3 +46,11 @@ class Processor:
     def wait(self):
         if self.thread:
             self.thread.join()
+
+    def origin(self):
+        if self._previous:
+            return self._previous.origin()
+        return self
+
+    def stop(self):
+        raise NotImplementedError(f"Processor {self} has no stop method implemented")
