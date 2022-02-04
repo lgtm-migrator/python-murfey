@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import os
 import pathlib
-from typing import Tuple
 
 import requests
 from rich.prompt import Prompt
@@ -28,11 +27,7 @@ def run():
     destination = Prompt.ask("Where should files be transferred to?")
     monitor = watch_directory(pathlib.Path(dir_to_watch), file_pattern=pattern)
     rsync = start_transfer(monitor, pathlib.Path(destination))
-    progress, drain = start_progress(rsync)
-    # while stop := Confirm.ask("Continue transfer?"):
-    #    pass
-    # stop_watching(monitor)
-    # rsync.wait()
+    progress = start_progress(rsync)
     progress.wait()
 
 
@@ -76,11 +71,11 @@ def start_transfer(monitor: Monitor, destination: pathlib.Path) -> RsyncPipe:
     return rp
 
 
-def start_progress(rp: RsyncPipe) -> Tuple[ProgressMonitor, Drain]:
+def start_progress(rp: RsyncPipe) -> ProgressMonitor:
     pm = ProgressMonitor()
     rp >> pm
     pm.process(in_thread=True)
     drain = Drain()
     pm >> drain
     drain.process(in_thread=True, daemon=True)
-    return pm, drain
+    return pm
