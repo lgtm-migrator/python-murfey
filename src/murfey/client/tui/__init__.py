@@ -20,7 +20,9 @@ from rich.table import Column
 from textual import events
 from textual.app import App
 from textual.keys import Keys
+from textual.message import Message
 from textual.reactive import Reactive
+from textual.views import DockView
 from textual.widget import Widget
 
 from murfey.client.tui.progress import BlockBarColumn
@@ -66,13 +68,26 @@ class StatusBar(Widget):
         self.refresh()
 
 
+class VisitSelected(Message):
+    def __init__(self, sender: Widget):
+        super().__init__(sender)
+        self.bubble = True
+
+
 class Hover(Widget):
+    def __init__(self, id, label):
+        super().__init__()
+        self.id = id
+        self.label = label
+        self.selected_id = []
+
     mouse_over = Reactive(False)
+    current_visit = ""
 
     def render(self) -> Panel:
         return Panel(
-            "Hello [b]World[/b]",
-            style=("on red" if self.mouse_over else ""),
+            str(self.label),
+            style=("on red" if self.id in self.selected_id else ""),
             box=SQUARE,
         )
 
@@ -81,6 +96,30 @@ class Hover(Widget):
 
     def on_leave(self) -> None:
         self.mouse_over = False
+
+    async def on_click(self, event: events.Click) -> None:
+        self.selected_id.append(self.id)
+        while len(self.selected_id) > 1:
+            del self.selected_id[-1]
+        print("clicked", self.selected_id, self.label)
+        event.prevent_default().stop()
+        await self.emit(VisitSelected(self))
+        self.log("Clicked", VisitSelected(self))
+
+
+class AllVisits(DockView):
+    def __init__(self, visits) -> None:
+        super().__init__()
+        self.visits = visits
+
+    async def on_mount(self, event: events.Mount) -> None:
+        for visit in self.visits:
+            await self.dock(Hover(id=visit["id"], label=visit["label"]), size=8)
+
+    async def visit_selected(self, message: VisitSelected) -> None:
+        self.log("Visit selected")
+        # target = message.sender
+        self.panic()
 
 
 class InputBox(Widget):
@@ -126,13 +165,20 @@ class InputBox(Widget):
 
 
 class MurfeyTUI(App):
-    input_box: InputBox
-
+    # input_box: InputBox
     async def on_load(self, event):
         await self.bind("q", "quit")
 
     async def on_mount(self) -> None:
-        self.input_box = InputBox(self)
-        self._statusbar = StatusBar()
-        hovers = (Hover() for _ in range(3))
-        await self.view.dock(self._statusbar, self.input_box, *hovers, edge="top")
+
+        self.visits = [
+            {"id": 1, "label": "nt"},
+            {"id": 2, "label": "bi"},
+            {"id": 3, "label": "cm"},
+        ]
+        # self.input_box = InputBox(self)
+        # self._statusbar = StatusBar()
+        self.log("Starting")
+        # hovers = (Hover() for _ in range(3))
+        # await self.view.dock(*hovers, edge="top") #self._statusbar, self.input_box,
+        await self.view.dock(AllVisits(self.visits), edge="top")
