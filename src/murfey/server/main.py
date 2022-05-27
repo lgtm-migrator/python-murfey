@@ -10,13 +10,20 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from ispyb.sqlalchemy import BLSession, Proposal
 from pydantic import BaseModel
+from workflows.recipe.wrapper import RecipeWrapper
 
 import murfey.server
 import murfey.server.bootstrap
 import murfey.server.ispyb
 import murfey.server.websocket as ws
 import murfey.util.models
-from murfey.server import get_hostname, get_microscope, template_files, templates
+from murfey.server import (
+    _transport_object,
+    get_hostname,
+    get_microscope,
+    template_files,
+    templates,
+)
 
 log = logging.getLogger("murfey.server.main")
 
@@ -140,6 +147,25 @@ async def add_file(file: File):
     log.info(message)
     await ws.manager.broadcast(f"File {file} transferred")
     return file
+
+
+class ZocaloMessage:
+    zocalo_header: dict
+    zocalo_message: dict
+
+
+@app.post("/visits/{visit_name}/process")
+async def request_processing(message: ZocaloMessage):
+    log.debug(
+        f"Zocalo message receive with message {message.zocalo_message} and header {message.zocalo_header}"
+    )
+    assert _transport_object is not None
+    if message.zocalo_header.get("workflows-recipe") in {True, "True", "true", 1}:
+        rw = RecipeWrapper(
+            message=message.zocalo_message, transport=_transport_object.transport
+        )
+    await _transport_object.process_movie(rw, message.zocalo_message)
+    return message
 
 
 @app.get("/version")

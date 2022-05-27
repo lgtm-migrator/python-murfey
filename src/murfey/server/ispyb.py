@@ -7,6 +7,7 @@ import ispyb.sqlalchemy
 import sqlalchemy.orm
 import workflows.transport
 from fastapi import Depends
+from workflows.recipe.wrapper import RecipeWrapper
 
 import murfey.server
 from murfey.util.models import Visit
@@ -42,6 +43,10 @@ class TransportManager:
         self.transport.send(
             "processing_recipe", {"recipes": ["ispyb-murfey"], "parameters": message}
         )
+
+    def process_movie(self, rw: RecipeWrapper, message: dict):
+        if rw.recipe_step.get("output", {}).get("motion_corr") is not None:
+            rw.send_to("motion_corr", message)
 
 
 def _get_session() -> sqlalchemy.orm.Session:
