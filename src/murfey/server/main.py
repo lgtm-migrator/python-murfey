@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from ispyb.sqlalchemy import BLSession, Proposal
-from pydantic import BaseModel
+from pydantic import BaseModel, dataclasses
 from workflows.recipe.wrapper import RecipeWrapper
 
 import murfey.server
@@ -149,12 +149,14 @@ async def add_file(file: File):
     return file
 
 
+class Config:
+    arbitrary_types_allowed = True
+
+
+@dataclasses.dataclass(config=Config)
 class ZocaloMessage:
     zocalo_header: dict
     zocalo_message: dict
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 @app.post("/visits/{visit_name}/process")
