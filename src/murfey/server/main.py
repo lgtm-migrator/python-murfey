@@ -153,6 +153,9 @@ class ZocaloMessage:
     zocalo_header: dict
     zocalo_message: dict
 
+    class Config:
+        arbitrary_types_allowed = True
+
 
 @app.post("/visits/{visit_name}/process")
 async def request_processing(message: ZocaloMessage):
